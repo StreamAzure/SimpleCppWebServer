@@ -2,6 +2,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <string.h>
+#include <unistd.h>
 #include "util.h"
 
 int main() {
@@ -38,5 +39,24 @@ int main() {
     errif(clnt_sockfd == -1, "socket accept error");
 
     printf("new client fd %d! IP: %s Port: %d\n", clnt_sockfd, inet_ntoa(clnt_addr.sin_addr), ntohs(clnt_addr.sin_port));
+    
+    while(true){
+        char buf[1024]; // 缓冲区
+        bzero(&buf, sizeof(buf)); // 初始化
+        ssize_t read_bytes = read(clnt_sockfd, buf, sizeof(buf)); // 从客户端读数据，返回数据大小
+        if(read_bytes > 0){
+            printf("message from client fd %d: %s\n", clnt_sockfd, buf);
+            write(clnt_sockfd, buf, sizeof(buf)); // 将收到的数据回复给客户端
+        }
+        else if(read_bytes == 0){ // EOF
+            printf("client fd %d disconnected\n", clnt_sockfd);
+            close(clnt_sockfd);
+            break;
+        }
+        else if(read_bytes == -1){
+            close(clnt_sockfd);
+            errif(true, "socket read error");
+        }
+    }
     return 0;
 }

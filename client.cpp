@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include "util.h"
 
+#define BUFFER_SIZE 1024
+
 int main() {
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     errif(sockfd == -1, "socket create error");
@@ -23,11 +25,13 @@ int main() {
     // 成功时返回 0，客户端可以通过读写sockfd与服务器通信
 
     while(true){
-        char buf[1024]; // 缓冲区
+        char buf[BUFFER_SIZE]; // 缓冲区，大小必须大于或等于server那边的READ_SIZE，因为是非阻塞式IO
         bzero(&buf, sizeof(buf)); // 初始化
+
         std::cin >> buf;
         ssize_t write_bytes = write(sockfd, buf, sizeof(buf)); // 向接口写数据
         errif(write_bytes == -1, "socket already disconnected");
+
         bzero(&buf, sizeof(buf));
         ssize_t read_bytes = read(sockfd, buf, sizeof(buf)); // 读取服务器发来的数据
         if(read_bytes > 0){
@@ -42,6 +46,6 @@ int main() {
             errif(true, "socket read error");
         }
     }
-    
+    close(sockfd);
     return 0;
 }

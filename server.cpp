@@ -2,6 +2,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <string.h>
+#include "util.h"
 
 int main() {
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -10,6 +11,7 @@ int main() {
     // AF_INET IPv4,，AF_INET6 IPv6
     // SOCK_STREAM 流、面向连接， SOCK_DGRAM 数据报、无连接
     // 0|IPPROTO_TCP|IPPTOTO_UDP 自动推导协议类型|TCP|UDP
+    errif(sockfd == -1, "socket create error");
 
     // 将套接字绑定到一个IP地址和端口上（命名socket）
     struct sockaddr_in serv_addr;
@@ -20,11 +22,11 @@ int main() {
     serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
     serv_addr.sin_port = htons(8888);
 
-    bind(sockfd, (sockaddr*)&serv_addr, sizeof(serv_addr)); 
+    errif(bind(sockfd, (sockaddr*)&serv_addr, sizeof(serv_addr)) == -1, "socket bind error");
     // socket描述符与地址端口绑定
     // 地址+端口需要强制转换为sockaddr
 
-    listen(sockfd, SOMAXCONN);
+    errif(listen(sockfd, SOMAXCONN) == -1, "socket listen error");
     // 监听socket，SOMAXCONN最大监听队列长度（128）
     
     struct sockaddr_in clnt_addr; // 用于保存客户端的地址+端口信息
@@ -33,6 +35,7 @@ int main() {
 
     int clnt_sockfd = accept(sockfd, (sockaddr*)&clnt_addr, &clnt_addr_len);
     // 第三个参数是socket长度，但传地址而非传值
+    errif(clnt_sockfd == -1, "socket accept error");
 
     printf("new client fd %d! IP: %s Port: %d\n", clnt_sockfd, inet_ntoa(clnt_addr.sin_addr), ntohs(clnt_addr.sin_port));
     return 0;

@@ -1,17 +1,11 @@
-/*
- * @Author: your name
- * @Date: 2022-01-04 20:03:45
- * @LastEditTime: 2022-01-05 19:08:58
- * @LastEditors: your name
- * @Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
- * @FilePath: \30dayMakeCppServer\code\day01\client.cpp
- */
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <string.h>
+#include "util.h"
 
 int main() {
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    errif(sockfd == -1, "socket create error");
 
     struct sockaddr_in serv_addr;
 
@@ -22,7 +16,7 @@ int main() {
 
     //bind(sockfd, (sockaddr*)&serv_addr, sizeof(serv_addr)); 客户端不进行bind操作
 
-    connect(sockfd, (sockaddr*)&serv_addr, sizeof(serv_addr));
+    errif(connect(sockfd, (sockaddr*)&serv_addr, sizeof(serv_addr)) == -1, "socket connect error");
     // 通过自己的socket向服务器发起连接
     // 成功时返回 0，客户端可以通过读写sockfd与服务器通信
     

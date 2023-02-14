@@ -67,6 +67,8 @@ int main()
             }
         }
     }
+    delete serv_sock;
+    delete serv_addr;
     return 0;
 }
 

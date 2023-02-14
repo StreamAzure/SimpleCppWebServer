@@ -2,6 +2,7 @@
 #include "util.h"
 #include <unistd.h>
 #include <cstring>
+#include <Channel.h>
 
 #define MAX_EVENTS 1024
 
@@ -22,20 +23,46 @@ Epoll::~Epoll()
     delete [] events;
 }
 
-void Epoll::addFd(int fd, uint32_t op){
-    epoll_event ev;
-    bzero(&ev, sizeof(ev));
-    ev.data.fd = fd;
-    ev.events = op;
-    errif(epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev) == -1, "epoll add event error");
-}
+// void Epoll::addFd(int fd, uint32_t op){
+//     epoll_event ev;
+//     bzero(&ev, sizeof(ev));
+//     ev.data.fd = fd;
+//     ev.events = op;
+//     errif(epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev) == -1, "epoll add event error");
+// }
+// 已被updateChannel代替
 
-std::vector<epoll_event> Epoll::poll(int timeout){
-    std::vector<epoll_event> activeEvents; //?
+std::vector<Channel*> Epoll::poll(int timeout){
+    // std::vector<epoll_event> activeEvents; //?
+    // int nfds = epoll_wait(epfd, events, MAX_EVENTS, timeout);
+    // errif(nfds == -1, "epoll wait error");
+    // for(int i = 0; i < nfds; ++i){
+    //     activeEvents.push_back(events[i]);
+    // }
+    // return activeEvents;
+    std::vector<Channel*> activeChannels; // 所有有事件发生的Channel
     int nfds = epoll_wait(epfd, events, MAX_EVENTS, timeout);
     errif(nfds == -1, "epoll wait error");
-    for(int i = 0; i < nfds; ++i){
-        activeEvents.push_back(events[i]);
+    for(int i = 0;i < nfds; i++){
+        Channel *ch = (Channel*)events[i].data.ptr;
+        ch->setRevents(events[i].events);
+        activeChannels.push_back(ch);
     }
-    return activeEvents;
+    return activeChannels;
+}
+
+void Epoll::updateChannel(Channel *channel){
+    int fd = channel->getFd(); // 拿Channel的文件描述符
+    struct epoll_event ev;
+    bzero(&ev, sizeof(ev));
+    ev.data.ptr = channel;
+    ev.events = channel->getEvents(); // 需要监听的事件
+    if(!channel->getInEpoll()){ // 若Channel未加入epoll的红黑树，则添加
+        errif(epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev) == -1, "epoll add error");
+        channel->setInEpoll();
+        // debug("Epoll: add Channel to epoll tree success, the Channel's fd is: ", fd);
+    } else{ // 若Channel已在epoll的红黑树中，则更新
+        errif(epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &ev) == -1, "epoll modify error");
+        // debug("Epoll: modify Channel in epoll tree success, the Channel's fd is: ", fd);
+    }
 }

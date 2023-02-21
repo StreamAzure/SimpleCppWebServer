@@ -1,5 +1,5 @@
-#include "EventLoop.h"
-#include "Server.h"
+#include "src/EventLoop.h"
+#include "src/Server.h"
 
 #define MAX_EVENTS 1024
 #define READ_BUFFER 1024

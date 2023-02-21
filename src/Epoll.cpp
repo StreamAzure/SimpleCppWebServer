@@ -2,10 +2,17 @@
 #include "util.h"
 #include <unistd.h>
 #include <cstring>
-#include <Channel.h>
+#include "Channel.h"
 
 #define MAX_EVENTS 1024
 
+/**
+ * 封装Epoll机制
+ * 构造：1.epoll_create初始化eventpoll对象；2.new一个events数组用于返回就绪socket
+ * 析构：1.close(epfd)；2. delete掉events数组
+ * 通知与轮询：1.调用一次epoll_wait 2.将返回的就绪socket逐个封装成Channel
+ * 随后对Channel的处理都交给EventLoop
+*/
 Epoll::Epoll(): epfd(-1), events(nullptr)
 {
     epfd = epoll_create1(0);

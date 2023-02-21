@@ -4,29 +4,36 @@
 #include "Channel.h"
 #include <functional>
 #include <string.h>
+#include "Acceptor.h"
 #include <unistd.h>
 #include <stdio.h>
 #include <errno.h>
 
 #define READ_BUFFER 1024
 
-Server::Server(EventLoop *_loop) : loop(_loop){    
-    Socket *serv_sock = new Socket();
-    InetAddress *serv_addr = new InetAddress("127.0.0.1", 8888);
-    serv_sock->bind(serv_addr);
-    serv_sock->listen(); 
-    serv_sock->setnonblocking();
+Server::Server(EventLoop *_loop) : loop(_loop), acceptor(nullptr){    
+    // Socket *serv_sock = new Socket();
+    // InetAddress *serv_addr = new InetAddress("127.0.0.1", 8888);
+    // serv_sock->bind(serv_addr);
+    // serv_sock->listen(); 
+    // serv_sock->setnonblocking();
        
-    Channel *servChannel = new Channel(loop, serv_sock->getFd());
-    std::function<void()> cb = std::bind(&Server::newConnection, this, serv_sock);
-    servChannel->setCallback(cb);
-    servChannel->enableReading();
+    // Channel *servChannel = new Channel(loop, serv_sock->getFd());
+    // std::function<void()> cb = std::bind(&Server::newConnection, this, serv_sock);
+    // 定义回调函数，即对客户端新连接的处理方式
+    // servChannel->setCallback(cb);
+    // servChannel->enableReading();
+
+    // 原来的连接请求处理被封装为Acceptor类
+    acceptor = new Acceptor(loop);
+    std::function<void(Socket*)> cb = std::bind(&Server::newConnection, this, std::placeholders::_1);
+    // 定义回调函数，即对客户端新连接的处理方式
+    acceptor->setNewConnectionCallback(cb);
 
 }
 
-Server::~Server()
-{
-    
+Server::~Server(){
+    delete acceptor;
 }
 
 void Server::handleReadEvent(int sockfd){

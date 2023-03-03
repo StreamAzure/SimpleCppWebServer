@@ -1,0 +1,3 @@
+/home/stream/SimpleCppServer/src/build/CMakeFiles/server.dir
+/home/stream/SimpleCppServer/src/build/CMakeFiles/edit_cache.dir
+/home/stream/SimpleCppServer/src/build/CMakeFiles/rebuild_cache.dir

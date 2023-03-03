@@ -2,6 +2,7 @@
 #include "Epoll.h"
 #include "Channel.h"
 #include <vector>
+#include <stdio.h>
 
 EventLoop::EventLoop(): ep(nullptr), quit(false){
     ep = new Epoll();
@@ -14,8 +15,9 @@ EventLoop::~EventLoop(){
 void EventLoop::loop(){
     while(!quit){
         std::vector<Channel*> chs;
-        chs = ep->poll(); // 取出待处理事件队列
+        chs = ep->poll(); // 遍历就绪Channel列表
         for(auto it = chs.begin(); it != chs.end(); ++it){
+            printf("Channel开始处理事件...\n");
             (*it)->handleEvent(); // 让Channel处理事件
         }
     }

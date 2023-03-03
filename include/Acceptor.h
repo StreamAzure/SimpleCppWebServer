@@ -10,7 +10,7 @@ class Acceptor
 private:
     EventLoop *loop;
     Socket *sock;
-    InetAddress *addr;
+    // InetAddress *addr;
     Channel *acceptChannel;
 public:
     Acceptor(EventLoop *_loop);

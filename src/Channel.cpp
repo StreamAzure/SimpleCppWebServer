@@ -1,5 +1,6 @@
 #include "Channel.h"
 #include "EventLoop.h"
+#include "ThreadPool.h"
 #include <unistd.h>
 #include <stdio.h>
 Channel::Channel(EventLoop *_loop, int _fd) : loop(_loop), fd(_fd), events(0), revents(0), inEpoll(false){
@@ -13,7 +14,8 @@ Channel::~Channel()
     }
 }
 void Channel::handleEvent(){
-    callback();
+    loop->addThread(callback); // 使用线程池线程处理事件
+    // callback();
 }
 
 void Channel::enableReading(){

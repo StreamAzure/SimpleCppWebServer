@@ -3,7 +3,7 @@
 #include "ThreadPool.h"
 #include <unistd.h>
 #include <stdio.h>
-Channel::Channel(EventLoop *_loop, int _fd) : loop(_loop), fd(_fd), events(0), revents(0), inEpoll(false){
+Channel::Channel(EventLoop *_loop, int _fd) : loop(_loop), fd(_fd), listen_events_(0), ready_events_(0), inEpoll(false){
     printf("创建Channel：fd = %d\n", _fd);
 }
 Channel::~Channel()
@@ -14,12 +14,16 @@ Channel::~Channel()
     }
 }
 void Channel::handleEvent(){
-    loop->addThread(callback); // 使用线程池线程处理事件
-    // callback();
+    if (ready_events_ & (EPOLLIN | EPOLLPRI)) {
+        read_callback_();
+    }
+    if (ready_events_ & (EPOLLOUT)) {
+        write_callback_();
+    }
 }
 
 void Channel::enableReading(){
-    events = EPOLLIN | EPOLLET;
+    listen_events_ = EPOLLIN | EPOLLET;
     loop -> updateChannel(this);
     // 若Channel不在红黑树中，则添加
     // 若Channel已在红黑树中，则更新、打开允许读事件
@@ -28,12 +32,8 @@ int Channel::getFd(){
     return fd;
 }
 
-uint32_t Channel::getEvents(){
-    return events;
-}
-uint32_t Channel::getRevents(){
-    return revents;
-}
+uint32_t Channel::GetListenEvents() { return listen_events_; }
+uint32_t Channel::GetReadyEvents() { return ready_events_; }
 
 bool Channel::getInEpoll(){
     return inEpoll;
@@ -47,11 +47,10 @@ void Channel::setInEpoll(){
 //     events = _ev;
 // }
 
-void Channel::setRevents(uint32_t _ev){
-    revents = _ev;
-}
+void Channel::SetReadyEvents(uint32_t ev) { ready_events_ = ev; }
 
-void Channel::setCallback(std::function<void()> _cb){
-    callback = _cb;
-}
+// void Channel::setCallback(std::function<void()> _cb){
+//     callback = _cb;
+// }
 
+void Channel::SetReadCallback(std::function<void()> callback) { read_callback_ = callback; }

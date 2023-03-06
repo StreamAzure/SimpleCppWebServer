@@ -15,7 +15,7 @@ Buffer::~Buffer()
 void Buffer::append(const char* _str, int _size){
     for(int i = 0; i < _size; ++i){
         if(_str[i] == '\0') break;
-        buf.push_back(_str[i]);
+        buf_.push_back(_str[i]);
     }
 }
 
@@ -23,18 +23,23 @@ void Buffer::append(const char* _str, int _size){
  * 从标准输入获取要输入的字符，以'\n'为终止符，并写入到buf中
 */
 void Buffer::getline(){
-    buf.clear();
-    std::getline(std::cin, buf);
+    buf_.clear();
+    std::getline(std::cin, buf_);
 }
 
 ssize_t Buffer::size(){
-    return buf.size();
+    return buf_.size();
 }
 
 const char* Buffer::c_str(){
-    return buf.c_str();
+    return buf_.c_str();
 }
 
 void Buffer::clear(){
-    buf.clear();
+    buf_.clear();
+}
+
+void Buffer::setBuf(const char *buf) {
+  buf_.clear();
+  buf_.append(buf);
 }

@@ -25,6 +25,9 @@ Socket::~Socket()
     }
 }
 
+void Socket::SetNonBlocking() { fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK); }
+bool Socket::IsNonBlocking() { return (fcntl(fd, F_GETFL) & O_NONBLOCK) != 0; }
+
 void Socket::bind(InetAddress *_addr){
     // errif(::bind(fd, (sockaddr*)&addr->addr, addr->addr_len) == -1, "socket bind error");
     struct sockaddr_in addr = _addr->getAddr();

@@ -7,24 +7,25 @@ class Channel
 private:
     EventLoop *loop;
     int fd;
-    uint32_t events;// 希望监听的事件
-    uint32_t revents;// Epoll返回该Channel时正在发生的事件
+    uint32_t listen_events_;
+    uint32_t ready_events_;
     bool inEpoll;// 本Channel是否在epoll红黑树中
-    std::function<void()> callback;
+    std::function<void()> read_callback_;
+    std::function<void()> write_callback_;
 public:
     Channel(EventLoop *_loop, int _fd);
     ~Channel();
 
     void handleEvent();
     void enableReading();//监听读事件
+    uint32_t GetListenEvents();
+    uint32_t GetReadyEvents();
 
     int getFd();
-    uint32_t getEvents();
-    uint32_t getRevents();
+
     bool getInEpoll();
     void setInEpoll();
 
-    // void setEvents(uint32_t);
-    void setRevents(uint32_t);
-    void setCallback(std::function<void()>);
+    void SetReadyEvents(uint32_t ev);
+    void SetReadCallback(std::function<void()>);
 };

@@ -17,7 +17,7 @@ Acceptor::Acceptor(EventLoop *_loop) : loop(_loop) // Acceptor应该存在于一
     sock->setnonblocking();
     acceptChannel = new Channel(loop, sock->getFd());
     std::function<void()> cb = std::bind(&Acceptor::acceptConnection, this); // accept
-    acceptChannel->setCallback(cb);
+    acceptChannel->SetReadCallback(cb);
     acceptChannel->enableReading();
     delete addr;
 }

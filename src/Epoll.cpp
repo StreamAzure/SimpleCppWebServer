@@ -52,7 +52,7 @@ std::vector<Channel*> Epoll::poll(int timeout){
     errif(nfds == -1, "epoll wait error");
     for(int i = 0;i < nfds; i++){
         Channel *ch = (Channel*)events[i].data.ptr;
-        ch->setRevents(events[i].events);
+        ch->SetReadyEvents(events[i].events);
         activeChannels.push_back(ch);
     }
     return activeChannels;
@@ -63,7 +63,7 @@ void Epoll::updateChannel(Channel *channel){
     struct epoll_event ev;
     bzero(&ev, sizeof(ev));
     ev.data.ptr = channel;
-    ev.events = channel->getEvents(); // 需要监听的事件
+    ev.events = channel->GetListenEvents(); // 需要监听的事件
     if(!channel->getInEpoll()){ // 若Channel未加入epoll的红黑树，则添加
         errif(epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev) == -1, "epoll add error");
         channel->setInEpoll();

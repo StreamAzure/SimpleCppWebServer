@@ -6,21 +6,44 @@ class Socket;
 class Channel;
 class Buffer;
 
-class Connection
-{
-private:
-    EventLoop *loop;
-    Socket *sock;
-    Channel *channel;
-    std::function<void(Socket*)> deleteConnectionCallback;
-    // 每个Connection对象都各有一个读缓冲区和一个写缓冲区
-    std::string *inBuffer;
-    Buffer *readBuffer;
+class Connection{
 public:
+    enum State {
+        Invalid = 1,
+        Handshaking,
+        Connected,
+        Closed,
+        Failed,
+    };
     Connection(EventLoop *_loop, Socket *_sock);
     ~Connection();
     
-    void echo(int sockfd);
+    void Read();
+    void Write();
+    // void echo(int sockfd);
     void setDeleteConnectionCallback(std::function<void(Socket*)>);
+    void SetOnConnectCallback(std::function<void(Connection *)> const &callback);
+    State GetState();
+    void Close();
+    void SetSendBuffer(const char *str);
+    Buffer *GetReadBuffer();
+    const char *ReadBuffer();
+    Buffer *GetSendBuffer();
+    const char *SendBuffer();
+    void GetlineSendBuffer();
+    Socket *GetSocket();
+
+    void OnConnect(std::function<void()> fn);
+private:
+    EventLoop *loop;
+    Socket *sock;
+    Channel *channel{nullptr};
+    State state_{State::Invalid};
+    Buffer *read_buffer_{nullptr};
+    Buffer *send_buffer_{nullptr};
+    std::function<void(Socket*)> delete_connectioin_callback_;
+    std::function<void(Connection *)> on_connect_callback_;
+    void ReadNonBlocking();
+    void WriteNonBlocking();
 };
 

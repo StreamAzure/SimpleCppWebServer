@@ -4,6 +4,8 @@
 #include "Channel.h"
 #include "Acceptor.h"
 #include "Connection.h"
+#include "ThreadPool.h"
+#include "EventLoop.h"
 #include <string.h>
 #include <functional>
 #include <unistd.h>
@@ -12,30 +14,26 @@
 
 #define READ_BUFFER 1024
 
-Server::Server(EventLoop *_loop) : loop(_loop), acceptor(nullptr){    
-    // Socket *serv_sock = new Socket();
-    // InetAddress *serv_addr = new InetAddress("127.0.0.1", 8888);
-    // serv_sock->bind(serv_addr);
-    // serv_sock->listen(); 
-    // serv_sock->setnonblocking();
-       
-    // Channel *servChannel = new Channel(loop, serv_sock->getFd());
-    // std::function<void()> cb = std::bind(&Server::newConnection, this, serv_sock);
-    // 定义回调函数，即对客户端新连接的处理方式
-    // servChannel->setCallback(cb);
-    // servChannel->enableReading();
-
-    // 原来的连接请求处理被封装为Acceptor类
-    // 一个Server实例应至少有一个Acceptor
-    acceptor = new Acceptor(loop);
+Server::Server(EventLoop *_loop) : main_reactor_(_loop), acceptor(nullptr){    
+    acceptor = new Acceptor(main_reactor_);   //Acceptor由且只由mainReactor负责
     std::function<void(Socket*)> cb = std::bind(&Server::newConnection, this, std::placeholders::_1);
     // 定义回调函数，即对客户端新连接的处理方式
     acceptor->setNewConnectionCallback(cb);
 
+    int size = std::thread::hardware_concurrency();     //线程数量，也是subReactor数量
+    thread_pool_ = new ThreadPool(size);                //新建线程池
+    for(int i = 0; i < size; ++i){
+        sub_reactors_.push_back(new EventLoop());     //每一个线程是一个EventLoop
+    }
+    for(int i = 0; i < size; ++i){
+        std::function<void()> sub_loop = std::bind(&EventLoop::loop, sub_reactors_[i]);
+        thread_pool_->add(sub_loop);      //开启所有线程的事件循环
+    }
 }
 
 Server::~Server(){
     delete acceptor;
+    delete thread_pool_;
 }
 
 // void Server::newConnection(Socket *serv_sock){
@@ -51,19 +49,28 @@ Server::~Server(){
 
 void Server::newConnection(Socket *sock){
     printf("Server::newConnection被回调...\n");
-    Connection *conn = new Connection(loop, sock);
+    int random = sock->getFd() % sub_reactors_.size();    //调度策略：全随机
+    Connection *conn = new Connection(sub_reactors_[random], sock);   //分配给一个subReactor
+    // Connection *conn = new Connection(loop, sock);
     std::function<void(Socket*)> cb = std::bind(&Server::deleteConnection, this, std::placeholders::_1);
     conn->setDeleteConnectionCallback(cb); // 允许灵活定义每个连接的断开方式
+    conn->SetOnConnectCallback(on_connect_callback_); // 允许灵活定义连接的业务
     connections[sock->getFd()] = conn; 
-    // 一个Server示例使用一个map<int, *Connection>管理所有的TCP连接
-    // 其中int是TCP连接关联的Socket文件描述符
-    // 也就是说，将（来自客户端的一个）Socket与一条TCP连接建立映射
-    // 每个Connecion实例都固定有一个echo成员函数，绑定到对应Channel的回调函数
-    // 这样就把原来Server的成员函数handleReadEvent封装到了Connection里
 }
 
 void Server::deleteConnection(Socket * sock){
-    Connection *conn = connections[sock->getFd()];
-    connections.erase(sock->getFd());
-    delete conn;
+    int sockfd = sock->getFd();
+    auto it = connections.find(sockfd);
+    if (it != connections.end()) {
+        Connection *conn = connections[sockfd];
+        connections.erase(sockfd);
+        delete conn;
+        conn = nullptr;
+    }
+    // Connection *conn = connections[sock->getFd()];
+    // connections.erase(sock->getFd());
+    // delete conn;
+    // conn = nullptr;
 }
+
+void Server::OnConnect(std::function<void(Connection *)> fn) { on_connect_callback_ = fn; }

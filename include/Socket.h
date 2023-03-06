@@ -16,6 +16,9 @@ public:
     // 封装 errif(listen(sockfd, SOMAXCONN) == -1, "socket listen error");
     void setnonblocking();
 
+    bool IsNonBlocking();
+    void SetNonBlocking();
+
     int accept(InetAddress*);
     int getFd();
 };

@@ -3,7 +3,6 @@
 #include "Channel.h"
 #include "ThreadPool.h"
 #include <vector>
-#include <stdio.h>
 
 EventLoop::EventLoop(): ep(nullptr), threadPool(nullptr), quit(false){
     ep = new Epoll();
@@ -19,7 +18,6 @@ void EventLoop::loop(){
         std::vector<Channel*> chs;
         chs = ep->poll(); // 遍历就绪Channel列表
         for(auto it = chs.begin(); it != chs.end(); ++it){
-            printf("Channel开始处理事件...\n");
             (*it)->handleEvent(); // 让Channel处理事件
         }
     }
